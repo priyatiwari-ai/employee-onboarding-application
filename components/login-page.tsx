@@ -208,21 +208,13 @@ export default function LoginPage({ onLogin }: { onLogin: (email: string) => voi
           </form>
 
           {/* Demo Banner */}
-          <div className="mt-6 p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-center text-xs text-gray-600">
-              <strong>Demo Environment</strong> - This is a demonstration of the onboarding platform
-            </p>
-          </div>
+          
           <div className="mt-6 space-y-3 text-sm">
             <button className="w-full text-accent hover:underline text-center">Forgot Password?</button>
             <button className="w-full text-accent hover:underline text-center">Need Access?</button>
           </div>
 
-          <div className="mt-6 p-3 bg-muted rounded-lg text-xs text-muted-foreground space-y-1">
-            <p className="font-semibold text-foreground">Demo Credentials:</p>
-            <p>Email: ospecialist@corespectrum.com</p>
-            <p>Password: Demo@1234</p>
-          </div>
+         
         </CardContent>
       </Card>
       </div>
