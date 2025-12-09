@@ -120,6 +120,7 @@ export function ChatAIDialog({
   const [isAutonomous, setIsAutonomous] = useState(false)
   const [isExecutingPlan, setIsExecutingPlan] = useState(false)
   const [exceptionScenario, setExceptionScenario] = useState<1 | 2 | 3 | null>(null)
+  const [jordanScenario, setJordanScenario] = useState<boolean>(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingMessage, setProcessingMessage] = useState("")
   const [streamingActivity, setStreamingActivity] = useState<{
@@ -137,6 +138,8 @@ export function ChatAIDialog({
   const [currentStreamingIndex, setCurrentStreamingIndex] = useState<number>(-1)
   const [emailTimer, setEmailTimer] = useState<number>(0)
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false)
+  const [showEmailPopup, setShowEmailPopup] = useState<boolean>(false)
+  const [showViewMailButton, setShowViewMailButton] = useState<boolean>(false)
   const chatScrollAreaRef = useRef<HTMLDivElement>(null)
   const traceScrollAreaRef = useRef<HTMLDivElement>(null)
   const streamTimeoutsRef = useRef<NodeJS.Timeout[]>([])
@@ -147,6 +150,8 @@ export function ChatAIDialog({
       // Set exception scenario for Alex Morgan (Scenario 1 for now)
       if (candidateName === 'Alex Morgan') {
         setExceptionScenario(1)
+      } else if (candidateName === 'Jordan' || candidateName.toLowerCase().includes('jordan')) {
+        setJordanScenario(true)
       }
       initializeChat()
     }
@@ -211,15 +216,7 @@ export function ChatAIDialog({
 
 I am here to assist you with your onboarding journeys.
 
-Here are 5 candidates for whom onboarding needs to be initiated as their joining date is in next 7 days:
-
-🔸 **Sarah Wilson** - Engineering Lead (Joins Dec 16)
-🔸 **Michael Chen** - Product Designer (Joins Dec 17)  
-🔸 **Emma Davis** - Data Analyst (Joins Dec 18)
-🔸 **James Rodriguez** - DevOps Engineer (Joins Dec 19)
-🔸 **Alex Morgan** - Senior Software Engineer (Joins Dec 16)
-
-Please confirm if I can start onboarding process for these candidates.`,
+`,
         timestamp: new Date(),
         isSystemMessage: false
       }
@@ -255,7 +252,7 @@ How would you like to proceed today?`,
     initializeActivityTrace()
     initializePlanning()
 
-    // Only start streaming for non-Alex Morgan scenarios or if not autonomous
+    // Only start streaming for non-Alex Morgan scenarios
     if (candidateName !== 'Alex Morgan') {
       if (isAutonomous) {
         setTimeout(() => {
@@ -280,21 +277,21 @@ How would you like to proceed today?`,
         action: "Querying candidate data",
         status: "completed" as const,
         details: `Retrieved comprehensive onboarding data for ${candidateName}`,
-        agent: "Data Retrieval Agent",
+        agent: "Data Query Agent",
         delay: 1000
       },
       {
         action: "Understanding immediate actions",
         status: "completed" as const,
         details: `Analyzed current stage: ${currentStage}. Identified next steps in workflow`,
-        agent: "Analysis Agent",
+        agent: "Strategic Planner Agent",
         delay: 2500
       },
       {
         action: "Preparing welcome emails for onboarding",
         status: "completed" as const,
         details: "Customizing welcome email template with role-specific information",
-        agent: "Communication Agent",
+        agent: "Content Generation Agent",
         delay: 4000
       },
       {
@@ -555,13 +552,18 @@ How would you like to proceed today?`,
         setActivityTrace(prev => [...prev, ...aiResponse.activities!])
       }
 
-      // Special streaming for Alex Morgan after user confirms onboarding
-      if (candidateName === 'Alex Morgan' && (userMessage.content.toLowerCase().includes('yes') || userMessage.content.toLowerCase().includes('confirm') || userMessage.content.toLowerCase().includes('start') || userMessage.content.toLowerCase().includes('proceed'))) {
+      // Special streaming for Alex Morgan after user mentions Alex
+      if (candidateName === 'Alex Morgan' && userMessage.content.toLowerCase().includes('alex')) {
         if (exceptionScenario === 1) {
           setTimeout(() => startAlexMorganActivityStream(), 2000)
         } else if (exceptionScenario === 2) {
           setTimeout(() => startBGCExceptionActivityStream(), 2000)
         }
+      }
+      
+      // Special streaming for Jordan BGC scenario
+      if (userMessage.content.toLowerCase().includes('jordan')) {
+        setTimeout(() => startJordanBGCActivityStream(), 2000)
       }
     }, 1500)
   }
@@ -576,38 +578,45 @@ How would you like to proceed today?`,
     
     const alexMorganUpdates = [
       {
-        action: "🔍 Querying candidate data",
+        action: "Onboarding Planner Agent",
         status: "completed" as const,
-        details: "Analyzing Alex Morgan's employment records, role specifications, and onboarding requirements from integrated HR systems",
-        agent: "Data Intelligence Agent",
+        details: "",
+        agent: "Onboarding Planner Agent",
+        ticketId: "OPA-AM-2024-000"
+      },
+      {
+        action: "Querying candidate data",
+        status: "completed" as const,
+        details: "Pulling Alex's date from Applicant Tracking System, Analyzing Alex Morgan's role specification and work location\n\nDetermining documentation requirements, BGC checks required for role.",
+        agent: "Data Query Agent",
         ticketId: "QRY-AM-2024-001"
       },
       {
         action: "🧠 Understanding immediate actions",
         status: "completed" as const,
-        details: "Processing onboarding timeline, identifying critical dependencies for Dec 16 start date, and prioritizing task sequence",
-        agent: "Strategic Planning Agent",
+        details: "Identifying critical dependencies for January 5th start date, prioritizing task sequence, creating onboarding steps and defining timeline.",
+        agent: "Strategic Planner Agent",
         ticketId: "STR-AM-2024-002"
       },
       {
-        action: "✍️ Preparing welcome emails for onboarding",
+        action: "✍️ Preparing Welcome emails for onboarding",
         status: "completed" as const,
-        details: "Generating personalized welcome content, team introduction materials, and role-specific orientation schedule",
+        details: "Generating personalized welcome content, and communicating documentation and BGC requirements for Onboarding",
         agent: "Content Generation Agent",
         ticketId: "CNT-AM-2024-003"
       },
       {
         action: "📤 Sending welcome communications",
         status: "completed" as const,
-        details: "Successfully dispatched welcome email package with first-day instructions and orientation materials to candidate",
+        details: "Successfully dispatched welcome email package with instructions for document submission",
         agent: "Communication Delivery Agent",
         ticketId: "SND-AM-2024-004"
       },
       {
         action: "👁️ Monitoring email delivery status",
         status: "completed" as const,
-        details: "Email delivered successfully at 2:47 PM - tracking open rates, engagement metrics, and awaiting confirmation response",
-        agent: "Delivery Engagement Agent",
+        details: "Email delivered successfully",
+        agent: "Communication Delivery Agent",
         ticketId: "MON-AM-2024-005"
       }
     ]
@@ -622,12 +631,24 @@ How would you like to proceed today?`,
 
     const processNextActivity = () => {
       if (currentActivityIndex >= alexMorganUpdates.length) {
-        // First exception scenario completed, trigger second one immediately
+        // Activity trace completed, show completion message only for scenario 1
         setCurrentStreamingIndex(-1)
-        setTimeout(() => {
-          setExceptionScenario(2)
-          triggerSecondExceptionScenario()
-        }, 1000)
+        if (exceptionScenario === 1) {
+          setTimeout(() => {
+            const completionMessage: ChatMessage = {
+              id: `msg-${Date.now()}`,
+              type: 'ai',
+              content: `✅ Process initiated for Alex Morgan • I'll monitor the progress and notify you of any updates.
+
+[View Mail](view-mail)`,
+              timestamp: new Date(),
+              isSystemMessage: false
+            }
+            setMessages(prev => [...prev, completionMessage])
+            // Set flag in localStorage when Alex Morgan onboarding is initiated
+            localStorage.setItem('alexMorganChatCompleted', 'true')
+          }, 1000)
+        }
         return
       }
 
@@ -705,11 +726,235 @@ How would you like to proceed today?`,
                   
                   // Complete the activity and add to trace
                   const completeTimeout = setTimeout(() => {
+                    // Set appropriate timestamp based on activity index
+                    let activityTimestamp = new Date()
+                    if (currentActivityIndex === 0) {
+                      activityTimestamp = new Date(Date.now() - 60000) // Onboarding Planner Agent - 1 minute ago
+                    } else if (currentActivityIndex === 1 || currentActivityIndex === 2) {
+                      activityTimestamp = new Date(Date.now() - 60000) // Data Query Agent and Strategic Planner - 1 minute ago
+                    } else {
+                      activityTimestamp = new Date(Date.now() - 30000) // Content Generation and Communication Delivery - less than a minute ago
+                    }
+                    
                     const newActivity: ActivityTraceItem = {
                       id: streamingId,
                       action: update.action,
                       status: update.status,
-                      timestamp: new Date(),
+                      timestamp: activityTimestamp,
+                      details: update.details,
+                      agent: update.agent,
+                      ticketId: update.ticketId
+                    }
+                    
+                    setActivityTrace(prev => [...prev, newActivity])
+                    setStreamingActivity(null)
+                    currentActivityIndex++
+                    
+                    // Auto-scroll
+                    const scrollTimeout = setTimeout(() => {
+                      if (traceScrollAreaRef.current) {
+                        const scrollContainer = traceScrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement
+                        if (scrollContainer) {
+                          scrollContainer.scrollTop = scrollContainer.scrollHeight
+                        }
+                      }
+                    }, 100)
+                    addTimeout(scrollTimeout)
+                    
+                    // Process next activity after delay
+                    const nextActivityTimeout = setTimeout(processNextActivity, 2000)
+                    addTimeout(nextActivityTimeout)
+                  }, 500)
+                  addTimeout(completeTimeout)
+                }
+              }
+              streamDetails()
+            }, 300)
+            addTimeout(detailsDelayTimeout)
+          }
+        }
+        streamAction()
+      }, 2000) // 2 second thinking time
+      addTimeout(thinkingTimeout)
+    }
+
+    processNextActivity()
+  }
+
+  const startJordanBGCActivityStream = () => {
+    // Clear existing activity trace first
+    setActivityTrace([])
+    setIsProcessing(false)
+    setStreamingActivity(null)
+    
+    const currentTime = Date.now()
+    
+    const jordanBGCUpdates = [
+      {
+        action: "Onboarding Planner Agent",
+        status: "completed" as const,
+        details: "",
+        agent: "Onboarding Planner Agent",
+        ticketId: "OPA-JO-2024-000"
+      },
+      {
+        action: "📊 Summarizing BGC report",
+        status: "completed" as const,
+        details: "Analyzing background check findings, employment gaps, and risk assessment metrics from vendor report",
+        agent: "BGC Analysis Agent",
+        ticketId: "BGC-SUM-2024-001"
+      },
+      {
+        action: "🎯 Generating recommendations",
+        status: "completed" as const,
+        details: "Processing company policy guidelines, risk thresholds, and business impact to formulate approval recommendation",
+        agent: "Risk Assessment Agent",
+        ticketId: "REC-GEN-2024-002"
+      },
+      {
+        action: "🚀 Launching AI agents for ID creation",
+        status: "completed" as const,
+        details: "Deploying IdentityBot, PayrollAgent, and AssetProvisionBot for employee system setup and provisioning",
+        agent: "Orchestration Hub",
+        ticketId: "BOT-LAUNCH-2024-003"
+      },
+      {
+        action: "🎫 Tickets created for system setup",
+        status: "completed" as const,
+        details: "Generated tracking tickets: EMP-ID-AM-2024, PAY-SETUP-AM-2024, IT-ASSETS-AM-2024 for monitoring progress",
+        agent: "Ticket Management System",
+        ticketId: "TKT-CREATE-2024-004"
+      }
+    ]
+
+    let currentActivityIndex = 0
+    const activeTimeouts: NodeJS.Timeout[] = []
+
+    const addTimeout = (timeout: NodeJS.Timeout) => {
+      activeTimeouts.push(timeout)
+      streamTimeoutsRef.current.push(timeout)
+    }
+
+    const processNextActivity = () => {
+      if (currentActivityIndex >= jordanBGCUpdates.length) {
+        // Jordan BGC activity trace completed, show BGC report summary
+        setCurrentStreamingIndex(-1)
+        setTimeout(() => {
+          const completionMessage: ChatMessage = {
+            id: `msg-${Date.now()}`,
+            type: 'ai',
+            content: `I've reviewed the BGC report for Jordan.
+
+**Summary of BGC report:**
+- Employment gap of 1 month between last 2 jobs at Company X and Company Y
+- Employment period with employer1: 18 months  
+- Employment gap: 1 month
+- Employment period with employer2: 24 months
+- **Exception detected:** Passport expires in 4 months (Policy requires 6+ months)
+
+**Risk Assessment:** Low risk - Employment gap within Silverline Manufacturing policy (allows maximum gap of 3 months)
+
+**Recommended actions:** 
+1. Approve BGC exception as it is low risk and business critical role
+2. Request passport renewal before start date
+3. Risk of denying: Delay in onboarding for critical position
+
+Do you want to approve this exception?`,
+            timestamp: new Date(),
+            isSystemMessage: false
+          }
+          setMessages(prev => [...prev, completionMessage])
+        }, 1000)
+        return
+      }
+
+      const update = jordanBGCUpdates[currentActivityIndex]
+      setCurrentStreamingIndex(activityTrace.length + currentActivityIndex)
+      const thinkingMessages = [
+        "🔍 Parsing BGC report data and policy compliance...",
+        "🧠 Evaluating risk factors and business impact...",
+        "⚡ Cross-referencing approval guidelines and precedents...",
+        "📊 Computing risk scores and recommendation confidence...",
+        "🎯 Orchestrating system provisioning workflows...",
+        "🔄 Coordinating multi-agent deployment sequence..."
+      ]
+
+      // Show thinking indicator
+      setIsProcessing(true)
+      setProcessingMessage(thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)])
+      
+      // Scroll to show processing indicator
+      scrollToCurrentActivity()
+
+      // Start streaming after thinking delay
+      const thinkingTimeout = setTimeout(() => {
+        setIsProcessing(false)
+        
+        // Initialize streaming activity
+        const streamingId = `jordan-stream-${currentTime}-${currentActivityIndex}-${Math.random().toString(36).substr(2, 9)}`
+        setStreamingActivity({
+          id: streamingId,
+          action: update.action,
+          details: update.details,
+          agent: update.agent,
+          status: update.status,
+          ticketId: update.ticketId,
+          streamedAction: "",
+          streamedDetails: "",
+          isActionComplete: false,
+          isDetailsComplete: false
+        })
+
+        // Stream action character by character
+        let actionIndex = 0
+        const streamAction = () => {
+          if (actionIndex < update.action.length) {
+            setStreamingActivity(prev => prev ? {
+              ...prev,
+              streamedAction: update.action.substring(0, actionIndex + 1)
+            } : null)
+            actionIndex++
+            const actionTimeout = setTimeout(streamAction, 50) // 50ms per character
+            addTimeout(actionTimeout)
+          } else {
+            setStreamingActivity(prev => prev ? { ...prev, isActionComplete: true } : null)
+            
+            // Start streaming details after action is complete
+            const detailsDelayTimeout = setTimeout(() => {
+              let detailsIndex = 0
+              const streamDetails = () => {
+                if (detailsIndex < update.details.length) {
+                  setStreamingActivity(prev => prev ? {
+                    ...prev,
+                    streamedDetails: update.details.substring(0, detailsIndex + 1)
+                  } : null)
+                  
+                  // Auto-scroll during details streaming to show current activity
+                  if (detailsIndex % 2 === 0) {
+                    scrollToCurrentActivity()
+                  }
+                  
+                  detailsIndex++
+                  const detailsTimeout = setTimeout(streamDetails, 30) // 30ms per character for details
+                  addTimeout(detailsTimeout)
+                } else {
+                  setStreamingActivity(prev => prev ? { ...prev, isDetailsComplete: true } : null)
+                  
+                  // Complete the activity and add to trace
+                  const completeTimeout = setTimeout(() => {
+                    // Set appropriate timestamp based on activity index
+                    let activityTimestamp = new Date()
+                    if (currentActivityIndex === 0 || currentActivityIndex === 1 || currentActivityIndex === 2) {
+                      activityTimestamp = new Date(Date.now() - 180000) // First three - 3 minutes ago
+                    } else {
+                      activityTimestamp = new Date(Date.now() - 60000) // Last two - 1 minute ago
+                    }
+                    
+                    const newActivity: ActivityTraceItem = {
+                      id: streamingId,
+                      action: update.action,
+                      status: update.status,
+                      timestamp: activityTimestamp,
                       details: update.details,
                       agent: update.agent,
                       ticketId: update.ticketId
@@ -1000,6 +1245,27 @@ Do you want to approve this exception?`,
   }
 
   const parseMarkdownText = (text: string) => {
+    // Handle [View Mail] link first
+    if (text.includes('[View Mail](view-mail)')) {
+      const parts = text.split('[View Mail](view-mail)')
+      return (
+        <>
+          {parts[0]}
+          <Button 
+            onClick={() => setShowEmailPopup(true)}
+            variant="outline"
+            size="sm"
+            className="ml-2"
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            View Mail
+          </Button>
+          {parts[1]}
+        </>
+      )
+    }
+    
+    // Handle bold text (**text**)
     const parts = text.split(/\*\*(.*?)\*\*/g)
     return parts.map((part, index) => {
       if (index % 2 === 1) {
@@ -1014,29 +1280,11 @@ Do you want to approve this exception?`,
     const input = userInput.toLowerCase()
 
     // Special handling for Alex Morgan exception scenario 1
-    if (candidateName === 'Alex Morgan' && exceptionScenario === 1 && (input.includes('yes') || input.includes('confirm') || input.includes('start') || input.includes('proceed'))) {
-      // User replied with confirmation for scenario 1
+    if (candidateName === 'Alex Morgan' && exceptionScenario === 1 && input.includes('alex')) {
+      // User mentioned Alex - activity trace will start
       return {
-        message: `Perfect! Onboarding process has been kicked off for all candidates. I will keep you posted! ✅
-
-**Process initiated for Alex Morgan**
-• Welcome email preparation started
-• Engineering role-specific content being customized
-• First-day agenda and policies being compiled
-• Calendar invites for orientation sessions being prepared
-
-I'll monitor the progress and notify you of any updates.`,
-        activities: [
-          {
-            id: `activity-${Date.now()}-alex-init`,
-            action: "Alex Morgan onboarding initiated",
-            status: "completed",
-            timestamp: new Date(),
-            details: "Exception Scenario 1 triggered: Welcome email workflow started for Alex Morgan",
-            agent: "Onboarding Orchestrator",
-            ticketId: "ONB-AM-2024-INIT"
-          }
-        ]
+        message: ``,
+        activities: []
       }
     }
 
@@ -1092,7 +1340,7 @@ All systems are now processing Alex Morgan's onboarding. You'll receive updates 
       }
     }
 
-    if (input.includes('bgc') || input.includes('background') || input.includes('check')) {
+    if ((input.includes('bgc') || input.includes('background') || input.includes('check')) && !input.includes('jordan')) {
       return {
         message: `I've reviewed the BGC report for ${candidateName}. 
 
@@ -1234,6 +1482,15 @@ Do you want to approve this exception?`,
       setIsAutonomous(mode === 'autonomous')
       return {
         message: `Switching to ${mode.toUpperCase()} mode. ${mode === 'autonomous' ? 'I will now take independent actions and provide updates.' : 'I will now wait for your guidance before taking actions.'}`
+      }
+    }
+
+    // Special handling for Jordan BGC scenario
+    if (input.includes('jordan')) {
+      // Don't show BGC report immediately, let activity trace complete first
+      return {
+        message: ``,
+        activities: []
       }
     }
 
@@ -1492,7 +1749,9 @@ Do you want to approve this exception?`,
                           </div>
                           <div className="flex-1 space-y-1 min-w-0">
                             <div className="flex flex-col gap-1">
-                              <p className="font-semibold text-sm leading-normal break-words min-w-0 max-w-full">{item.action}</p>
+                              <p className={`font-semibold leading-normal break-words min-w-0 max-w-full ${
+                                item.agent === 'Onboarding Planner Agent' ? 'text-base' : 'text-sm'
+                              }`}>{item.action}</p>
                               <p className="text-xs text-muted-foreground">{formatDistanceToNow(item.timestamp, { addSuffix: true })}</p>
                             </div>
                             <p className="text-xs text-muted-foreground leading-relaxed break-words pr-1 whitespace-pre-wrap">{item.details}</p>
@@ -1546,7 +1805,9 @@ Do you want to approve this exception?`,
                           </div>
                           <div className="flex-1 space-y-1 min-w-0">
                             <div className="flex flex-col gap-1">
-                              <p className="font-semibold text-sm leading-normal break-words min-w-0 max-w-full">
+                              <p className={`font-semibold leading-normal break-words min-w-0 max-w-full ${
+                                streamingActivity.agent === 'Onboarding Planner Agent' ? 'text-base' : 'text-sm'
+                              }`}>
                                 {streamingActivity.streamedAction}
                                 {!streamingActivity.isActionComplete && (
                                   <span className="animate-pulse text-blue-500">|</span>
@@ -1585,6 +1846,61 @@ Do you want to approve this exception?`,
           </div>
         </div>
       </DialogContent>
+      
+      {/* Email Popup Dialog */}
+      <Dialog open={showEmailPopup} onOpenChange={setShowEmailPopup}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5" />
+              Welcome Email - Alex Morgan
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 space-y-4">
+            <div className="bg-gray-50 p-4 rounded-lg font-mono text-sm leading-relaxed">
+              <p><strong>To:</strong> alex.morgan@email.com</p>
+              <p><strong>From:</strong> diane.prince@corespectrum.com</p>
+              <p><strong>Subject:</strong> Welcome to CoreSpectrum - Next Steps for Your Onboarding</p>
+              <hr className="my-3" />
+              <div className="whitespace-pre-line">
+{`Hi Alex,
+
+Welcome to the CoreSpectrum family! We're excited to have you join us as `}<strong>Senior Software Engineer.</strong>{`
+
+Preboarding (action needed):
+Please submit the following within 3 business days by logging into our Candidate Portal <we shall embed the link here of the other Application>:
+
+• Identity proof
+• Address proof  
+• Educational certificates
+• Proof of previous employment(s)
+
+`}<strong>What happens next:</strong>{`
+
+`}<strong>Background Verification (BGC):</strong>{` After we receive your documents, our HR team will run standard checks across identity, address, education, and employment history.
+
+`}<strong>Systems & assets:</strong>{` We'll set up your corporate email and HRMS access and arrange your IT assets.
+
+`}<strong>Day1 details:</strong>{` You'll receive your orientation agenda and joining instructions closer to your start date.
+
+If you have any questions or need support while uploading, just reply to this email—we're here to help.
+
+Welcome aboard!
+
+Warm regards,
+
+Diane Prince
+Onboarding Specialist
+
+`}<strong>CoreSpectrum Inc.</strong>{`
+`}<strong>1234 Innovation Drive</strong>{`
+`}<strong>Suite 500</strong>{`
+`}<strong>San Francisco, CA 94105</strong>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }
