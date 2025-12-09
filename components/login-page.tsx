@@ -207,13 +207,6 @@ export default function LoginPage({ onLogin }: { onLogin: (email: string) => voi
             </div>
           </form>
 
-          {/* Demo Banner */}
-          
-          <div className="mt-6 space-y-3 text-sm">
-            <button className="w-full text-accent hover:underline text-center">Forgot Password?</button>
-            <button className="w-full text-accent hover:underline text-center">Need Access?</button>
-          </div>
-
          
         </CardContent>
       </Card>
