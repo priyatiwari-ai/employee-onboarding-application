@@ -186,22 +186,9 @@ export default function LoginPage({ onLogin }: { onLogin: (email: string) => voi
                     </DialogTitle>
                     <DialogDescription className="text-left">
                       <div className="space-y-3 mt-4">
-                        <p>
-                          This is a <strong>demo application</strong> for CoreSpectrum Manufacturing Inc.'s Onboarding Control Center.
-                        </p>
                         
-                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                          <p className="font-medium text-blue-900 mb-2">Demo Credentials:</p>
-                          <div className="space-y-1 text-sm">
-                            <p><strong>Onboarding Specialist:</strong><br />
-                            Email: ospecialist@corespectrum.com<br />
-                            Password: Demo@1234</p>
-                            <p><strong>HR Admin:</strong><br />
-                            Email: hradmin@corespectrum.com<br />
-                            Password: Demo@1234</p>
-                          </div>
-                        </div>
-
+                        
+                        
                         <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                           <p className="text-yellow-800 text-sm">
                             <strong>Note:</strong> All data shown is simulated for demonstration purposes. 
