@@ -96,7 +96,7 @@ export default function LoginPage({ onLogin }: { onLogin: (email: string) => voi
               <Building2 className="h-10 w-10 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-foreground">CoreSpectrum</CardTitle>
+         
           <CardDescription className="text-muted-foreground text-base">
             Onboarding Control Center
           </CardDescription>
